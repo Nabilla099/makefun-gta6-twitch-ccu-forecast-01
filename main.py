@@ -25,7 +25,10 @@ the pool (ordinary least squares) and take the quantiles of the
 residuals. The forecast is the regression prediction at the case's own
 hour-1 print, plus the residual quantiles, blended 50/50 with the
 matching normal quantiles (residual IQR / 1.349 as sigma) to smooth the
-noisy 5%/95% tails of a ~30-game sample:
+noisy 5%/95% tails of a ~30-game sample. The predictor log(p1) is
+clamped to the pool's observed log-v1 range, so an hour-1 print outside
+that range cannot extrapolate the fit (a launch far bigger than any
+comparable would otherwise push the regression far past its data):
 
     q_tau(h) = p1 * exp(med_h + 0.5*(Q_tau(resid_h) + z_tau*sigma_h))
 
@@ -150,7 +153,7 @@ def hour_quantiles(p1, pool, h):
         sxx = sum((x - mx) ** 2 for x in xs)
         b = sum((x - mx) * (y - my) for x, y in pts) / sxx if sxx else 0.0
         a = my - b * mx
-        med = a + b * math.log(p1)
+        med = a + b * min(max(math.log(p1), min(xs)), max(xs))
         res = sorted(y - (a + b * x) for x, y in pts)
         iqr = quantile(res, 0.75) - quantile(res, 0.25)
         sigma = max(0.05, iqr / 1.349)
